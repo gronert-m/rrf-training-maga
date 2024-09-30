@@ -1,5 +1,5 @@
 # Reproducible Research Fundamentals 2024
-## Mario's edition
+## Mario's Edition
 ## Using GitHub for Collaborative Research - README
 
 ## Introduction
