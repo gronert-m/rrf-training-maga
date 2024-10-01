@@ -2,45 +2,80 @@
 # 01. Data processing
 
 ### Libraries
-# library(haven)
-# library(dplyr)
-# library(tidyr)
-# library(stringr)
-# library(labelled)
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(labelled)
 
 ### Loading data ----
 
 # Load the dataset
-data_path <- "ADD-YOUR-PATH"
-data      <- read_dta(file.path(data_path, "Raw/TZA_CCT_baseline.dta"))
+data_path <- "C:/Users/wb529026/OneDrive - WBG/Documents/Courses/RRF 24/DataWork/Data"
+data      <- haven::read_dta(file.path(data_path, "Raw/TZA_CCT_baseline.dta"))
 
 ### Remove duplicates based on hhid
 data_dedup <- data %>%
-    ......
+    group_by(hhid) |> 
+    mutate(cases_by_hhid = n()) |> 
+    ungroup()
+
+# For the cases, go one by one and ensure they are true duplicates
+hhid_dup_cases <- unique(data_dedup$hhid[data_dedup$cases_by_hhid > 1])
+for (hhid_dup_case in hhid_dup_cases) {
+    
+    # REduce
+    df_red <- data_dedup |> filter(hhid == hhid_dup_case) |> select(-hhid)
+    
+    compare <- vector(mode = "logical", length = ncol(df_red))
+    
+    for (i in seq(ncol(df_red))) {
+        
+        compare[[i]] <- all(df_red[i] %in% df_red[i][1])
+        
+    }
+    
+    print(hhid_dup_case)
+    stopifnot(sum(compare) == length(compare)) 
+}
+  
+
+# Drop
+data_dedup <- data %>%
+    distinct(hhid, .keep_all = TRUE)
+
 
 ### Household (HH) level data ----
 
 #### Tidying data for HH level
-data_tidy_hh <- data_dedup %>%
-    ......
+data_tidy_hh <- data_dedup |> 
+    select(vid, hhid, enid, floor:n_elder, food_cons:submissionday)
+
 
 ### Data cleaning for Household-member (HH-member) level
 data_clean_hh <- data_tidy_hh %>%
     # Convert submissionday to date
-    mutate(...... = as.Date(......, format = "%Y-%m-%d %H:%M:%S")) %>%
+    mutate(submissiondate = as.Date(submissionday, format = "%Y-%m-%d %H:%M:%S")) %>%
     # Convert duration to numeric (if it is not already)
-    mutate(......) %>%
+    mutate(duration) %>%
+
     # Convert ar_farm_unit to factor (categorical data)
-    mutate(......) %>%
+    mutate(ar_unit = as.factor(ar_farm_unit),
+           ar_unit = na_if(ar_unit, "")) %>%
+    
+    # Capitalize letter
+    mutate(crop_other = stringr::str_to_title(crop_other)) |> 
+
     # Replace values in the crop variable based on crop_other using regex for new crops
-    mutate(crop = case_when(
-        ......
-    )) %>%
+    mutate(crop = case_when(stringr::str_detect(crop_other,"Sesame") ~ 41, 
+                            stringr::str_detect(crop_other,"Coconut") ~ 40, 
+                            TRUE ~ crop )) %>%
+    
     # Recode negative numeric values (-88) as missing (NA)
-    mutate(across(......)) %>%
+    mutate(across(where(is.numeric), ~replace(., . == -88, NA))) |> 
     # Add variable labels
     set_variable_labels(
-        ......
+        duration = "duration" 
     )
 
 # Save the household data
@@ -50,32 +85,36 @@ write_dta(data_clean_hh, file.path(data_path, "Intermediate/TZA_CCT_HH.dta"))
 
 #### Tidying data for HH-member level
 data_tidy_mem <- data_dedup %>%
-    select(......,
-           starts_with(......)) %>%
-    pivot_longer(cols = -c(vid, hhid, enid),  # Keep IDs static
-                 names_to = ......,
+    select(vid, hhid, enid, starts_with("gender"), starts_with("age"),
+           starts_with("read"), starts_with("clinic_visit"), starts_with("sick"), starts_with("days_sick"), 
+           starts_with("treat_fin"), starts_with("treat_cost"), starts_with("ill_impact"), starts_with("days_impact")) %>%
+    tidyr::pivot_longer(cols = -c(vid, hhid, enid),  # Keep IDs static
+                 names_to = c(".value", "member"),
                  names_pattern = "(.*)_(\\d+)")  # Capture the variable and the suffix
 
 ### Data cleaning for HH-member level
 data_clean_mem <- data_tidy_mem %>%
     # Drop rows where gender is missing (NA)
-    ...... %>%
+    filter(!is.na(gender))
+           
+           #%>%
     # Variable labels
-    ......
+    #......
 
 # Save the tidy household-member data
 write_dta(data_clean_mem, file.path(data_path, "Intermediate/TZA_CCT_HH_mem.dta"))
 
 ### Secondary data ----
 
+
 # Load CSV data
 secondary_data <- read.csv(file.path(data_path, "Raw/TZA_amenity.csv"))
 
 # Tidying data
 secondary_data <- secondary_data %>%
-    pivot_wider(names_from = ......,
-                values_from = ......,
-                names_prefix = ......)
+    pivot_wider(names_from = amenity,
+                values_from = n,
+                names_prefix = "n_")
 
 # Save the final tidy secondary data
 write_dta(secondary_data, file.path(data_path, "Intermediate/TZA_amenity_tidy.dta"))
