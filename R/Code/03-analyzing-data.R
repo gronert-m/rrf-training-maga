@@ -2,16 +2,16 @@
 # 03. Data Analysis
 
 # Libraries
-# library(haven)
-# library(dplyr)
-# library(modelsummary)
-# library(stargazer)
-# library(ggplot2)
-# library(tidyr)
+library(haven)
+library(dplyr)
+library(modelsummary)
+library(stargazer)
+library(ggplot2)
+library(tidyr)
 
 # Load data 
 #household level data
-data_path <- "ADD-YOUR-PATH"
+data_path <- "C:/Users/wb529026/OneDrive - WBG/Documents/Courses/RRF 24/DataWork/Data"
 hh_data   <- read_dta(file.path(data_path, "Final/TZA_CCT_analysis.dta"))
 
 # secondary data 
@@ -20,39 +20,63 @@ secondary_data <- read_dta(file.path(data_path, "Final/TZA_amenity_analysis.dta"
 
 # Summary statistics ----
 
+# REname data
+data_renamed <-
+    hh_data %>%
+    select(
+        `HH size` = hh_size,
+        `N children <= 5` = n_child_5,
+        `N of elderly (>60)` = n_elder,
+        `Any mem can read` = read,
+        `Any mem was sick 4 weeks` = sick,
+        `District` = district)
+
 # Create summary statistics by district and export to CSV
 summary_table <- datasummary(
-    ...... ~ ...... * (Mean + SD), 
-    data = hh_data,
+    All(data_renamed) ~ as_factor(District) * (Mean + SD), 
+    data = data_renamed,
     title = "Summary Statistics by District",
     output = file.path("Outputs", "summary_table.csv")  # Change to CSV
 )
 
 
 # Balance table ----
+
+# REname data
+balance_data <-
+    hh_data %>%
+    select(
+        `HH size` = hh_size,
+        `N children <= 5` = n_child_5,
+        `N of elderly (>60)` = n_elder,
+        `Any mem can read` = read,
+        `Any mem was sick 4 weeks` = sick,
+        treatment)
+
 balance_table <- datasummary_balance(
-    ...... ~ ......,
-    data = hh_data,
+    All(balance_data) ~ treatment,
+    data = balance_data,
     stars = TRUE,
     title = "Balance by Treatment Status",
     note = "Includes HHS with observations for baseline and endline",
     output = file.path("Outputs", "balance_table.csv")  # Change to CSV
 )
 
+
 # Regressions ----
 
 # Model 1: Food consumption regressed on treatment
-model1 <- lm(......, data = hh_data)
+model1 <- lm(food_cons_usd_w ~ treatment, data = hh_data)
 
 # Model 2: Add controls (crop_damage, drought_flood)
-model2 <- lm(......, data = hh_data)
+model2 <- lm(food_cons_usd_w ~ treatment + crop_damage + drought_flood, data = hh_data)
 
 # Model 3: Add FE by district
-model3 <- lm(......, data = hh_data)
+model3 <- lm(food_cons_usd_w ~ treatment + crop_damage + drought_flood + factor(district), data = hh_data)
 
 # Create regression table using stargazer
 stargazer(
-    ......,
+    model1, model2, model3,
     title = "Food Consumption Effects",
     keep = c("treatment", "crop_damage", "drought_flood"),
     covariate.labels = c("Treatment",
@@ -76,15 +100,23 @@ hh_data_plot <- hh_data %>%
            district = as_factor(district))
 
 # Create the bar plot
-# Create the bar plot
-ggplot(hh_data_plot, aes(......) +
-    geom_bar(......) +
-    geom_text(......) +  # Add text labels
-    facet_wrap(......) +  # Facet by district
+ggplot(hh_data_plot, aes(x = treatment, y = area_acre_w, fill = treatment)) +
+    geom_bar(stat = "summary", fun = "mean", position = "dodge") +  # Use mean for the bar height
+    geom_text(stat = "summary", fun = "mean", aes(label = round(..y.., 1)), 
+              position = position_dodge(width = 0.9), vjust = -0.5) +  # Add text labels
+    facet_wrap(~ district, nrow = 1, labeller = label_both) +  # Facet by district
     labs(title = "Area cultivated by treatment assignment across districts",
          x = NULL, y = "Average area cultivated (Acre)") +  # Remove x-axis title
     theme_minimal() +
-    ...... # Add other customization if needed
+    scale_fill_brewer(palette = "PuRd", name = "Assignment:") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5, size = 14),
+          strip.text = element_text(size = 12),
+          legend.title = element_text(size = 11),
+          legend.text = element_text(size = 10),
+          axis.text.x = element_blank(),  # Remove repeated x-axis labels
+          axis.ticks.x = element_blank()) +  # Remove x-axis ticks
+    guides(fill = guide_legend(reverse = TRUE)) 
 
 ggsave(file.path("Outputs", "fig1.png"), width = 10, height = 6)
 
@@ -103,17 +135,23 @@ mean_male <- hh_data %>%
     pull(mean)
 
 # Create the density plot
-ggplot(hh_data, 
-       aes(......)) +
-    geom_density(......) +  # Density plot
-    geom_vline(xintercept = ......, color = "purple", linetype = "dashed", size = 1) +  # Vertical line for female mean
-    geom_vline(xintercept = ......, color = "grey", linetype = "dashed", size = 1) +  # Vertical line for male mean
+ggplot(hh_data, aes(x = nonfood_cons_usd_w, color = factor(female_head))) +
+    geom_density(size = 1.2) +  # Density plot
+    geom_vline(xintercept = mean_female, color = "purple", linetype = "dashed", size = 1) +  # Vertical line for female mean
+    geom_vline(xintercept = mean_male, color = "grey", linetype = "dashed", size = 1) +  # Vertical line for male mean
     labs(title = "Distribution of Non-Food Consumption",
          x = "Non-food consumption value (USD)", 
          y = "Density",
          color = "Household Head:") +  # Custom labels
+    scale_color_manual(values = c("grey", "purple"), labels = c("Male", "Female")) +  # Custom colors
     theme_minimal() +
-    ...... # Add other customization if needed
+    theme(plot.title = element_text(hjust = 0.5, size = 16),
+          legend.position = "bottom",
+          legend.title = element_text(size = 11),
+          legend.text = element_text(size = 10)) +
+    annotate("text", x = mean_female, y = 0.015, label = paste("Mean (Female):", round(mean_female, 1)), color = "purple", hjust = -0.1) +
+    annotate("text", x = mean_male, y = 0.01, label = paste("Mean (Male):", round(mean_male, 1)), color = "grey", hjust = 1.1) +
+    annotate("text", x = 50, y = 0.022, label = "Dashed line represents the average non-food consumption", size = 3, hjust = 0)
 
 ggsave(file.path("Outputs", "fig2.png"), width = 10, height = 6)
 
@@ -127,15 +165,16 @@ long_data <- secondary_data %>%
            in_sample = if_else(district %in% c("Kibaha", "Chamwino", "Bagamoyo"), "In Sample", "Not in Sample"))
 
 # Create the facet-wrapped bar plot
-ggplot(long_data,
-       aes(......)) +
-    geom_bar(......) +
+ggplot(long_data, aes(x = reorder(district, count), y = count, fill = in_sample)) +
+    geom_bar(stat = "identity", position = "dodge", color = "black") +
     coord_flip() +
-    facet_wrap(......) +  # Create facets for schools and medical facilities
+    facet_wrap(~ amenity, scales = "free_x") +  # Create facets for schools and medical facilities
     labs(title = "Access to Amenities: By Districts",
          x = "District", y = NULL, fill = "Districts:") +
     scale_fill_brewer(palette="PuRd") +
     theme_minimal() +
-    ...... # Add other customization if needed
+    theme(plot.title = element_text(hjust = 0.5, size = 16),
+          strip.text = element_text(size = 14),  # Adjust facet labels
+          legend.position = "bottom")
 
 ggsave(file.path("Outputs", "fig3.png"), width = 10, height = 6)
