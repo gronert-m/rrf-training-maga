@@ -41,7 +41,7 @@ for (hhid_dup_case in hhid_dup_cases) {
   
 
 # Drop
-data_dedup <- data %>%
+data_clean <- data %>%
     distinct(hhid, .keep_all = TRUE)
 
 
