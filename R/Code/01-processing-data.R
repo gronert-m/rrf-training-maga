@@ -10,6 +10,8 @@ library(labelled)
 
 ### Loading data ----
 
+rm(list = ls())
+
 # Load the dataset
 data_path <- "C:/Users/wb529026/OneDrive - WBG/Documents/Courses/RRF 24/DataWork/Data"
 data      <- haven::read_dta(file.path(data_path, "Raw/TZA_CCT_baseline.dta"))
