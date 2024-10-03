@@ -1,0 +1,26 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{3}{c}}
+\hline\hline
+                    &Annual food consumption(USD)                                     \\
+                    &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         \\
+\hline
+Group Assignment    &      -0.512         &      -1.660         &      -1.660         \\
+                    &     (7.695)         &     (7.609)         &     (7.202)         \\
+[1em]
+Experienced crop damage&                     &      50.207\sym{***}&      50.207\sym{***}\\
+                    &                     &     (7.889)         &     (8.603)         \\
+[1em]
+Experienced drought/flood&                     &       0.275         &       0.275         \\
+                    &                     &     (8.016)         &     (9.641)         \\
+[1em]
+Constant            &     228.105\sym{***}&     202.471\sym{***}&     202.471\sym{***}\\
+                    &     (5.441)         &     (7.533)         &    (13.537)         \\
+\hline
+Observations        &        1758         &        1758         &        1758         \\
+Clustering          &          No         &          No         &         Yes         \\
+\hline\hline
+\multicolumn{4}{l}{\footnotesize Standard errors in parentheses}\\
+\multicolumn{4}{l}{\footnotesize \sym{*} \(p<0.05\), \sym{**} \(p<0.01\), \sym{***} \(p<0.001\)}\\
+\end{tabular}
+}
