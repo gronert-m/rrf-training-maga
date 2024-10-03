@@ -2,18 +2,18 @@
 # 01. Data processing
 
 ### Libraries
-library(haven)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(labelled)
+# library(haven)
+# library(dplyr)
+# library(tidyr)
+# library(stringr)
+# library(labelled)
 
 ### Loading data ----
 
-rm(list = ls())
+# rm(list = ls())
 
 # Load the dataset
-data_path <- "C:/Users/wb529026/OneDrive - WBG/Documents/Courses/RRF 24/DataWork/Data"
+#data_path <- "C:/Users/wb529026/OneDrive - WBG/Documents/Courses/RRF 24/DataWork/Data"
 data      <- haven::read_dta(file.path(data_path, "Raw/TZA_CCT_baseline.dta"))
 
 ### Remove duplicates based on hhid
