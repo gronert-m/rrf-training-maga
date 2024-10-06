@@ -137,7 +137,7 @@ eststo female: 	estpost sum $sumvars if female_head == 1
 
 * Also export in tex for latex
 esttab 	all male female ///
-		using "${outputs}/summary.tex", replace ///
+		using "${outputs}/summary_reprun.tex", replace ///
 		label ///
 		main(mean %6.2f) aux(sd) ///
 		refcat(hh_size "\textbf{HH characteristics}" drought_flood "\textbf{Shocks:}" , nolabel) ///
